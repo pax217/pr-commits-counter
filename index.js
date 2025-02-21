@@ -8,17 +8,21 @@ messages.squash = 'Only 1 commit is possible in pull request. Please squash your
 messages.backport = 'source branch is backport. Check was skipped';
 
 try {
-    const targetBranch = github.context.payload.pull_request.base.ref
-    const sourceBranch = github.context.payload.pull_request.head.ref
+    if (!github.context.payload.pull_request) {
+        throw new Error('This action can only be run in the context of a pull request.');
+    }
+
+    const targetBranch = github.context.payload.pull_request.base.ref;
+    const sourceBranch = github.context.payload.pull_request.head.ref;
     const exceptBranches = core.getInput('except-branches').split(';');
     const commitsCount = Number.parseInt(core.getInput('commits-count'));
 
     if (sourceBranch.split("/").includes("backport")) {
         core.info(messages.backport);
-        return
+        return;
     }
 
-    const pattern = exceptBranches.find((target) => target.match( (targetBranch).split("/")[0] ))
+    const pattern = exceptBranches.find((target) => target.match((targetBranch).split("/")[0]));
     if (pattern) {
         core.info(messages.exceptList);
     } else {
@@ -47,7 +51,7 @@ async function getCommitsCount(sourceBranch, targetBranch) {
             }
         },
     };
-    core.info(src)
+    core.info(src);
     await exec.exec(`${src}/commits-count.sh`, [sourceBranch, targetBranch], options);
     if (err) {
         core.setFailed(err);
